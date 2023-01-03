@@ -114,11 +114,31 @@ const getImageEigenvalue = async (filepath, imgWidth = 8) => {
     return eigenvalue;
 }
 
+const doSSIM = async (file1, file2) => {
+    let image1 = await canvas.loadImage(file1);
+    let image2 = await canvas.loadImage(file2);
+    image1 = toCompressData(image1, 8);
+    image2 = toCompressData(image2, 8);
+    image1.channels = 4;
+    image2.channels = 4;
+    return ssim.compare(image1, image2);
+}
 
 const ssim = require('image-ssim');
 
 
-(async () => {
+(async (args) => {
+
+    if (args.length >= 2) {
+        const file1 = args[0];
+        const file2 = args[1];
+        let now = Date.now();
+        let result = await doSSIM(file1, file2)
+        console.log((Date.now() - now).toString().padStart(4, ' '), 'ms', result.ssim);
+        console.log(file1);
+        console.log(file2);
+        return;
+    }
 
     const images = fs.readdirSync(`./images`);
     for (let i in images) for (let j in images) {
@@ -127,32 +147,27 @@ const ssim = require('image-ssim');
         const file1 = `./images/${images[i]}`;
         const file2 = `./images/${images[j]}`;
 
-        let image1 = await canvas.loadImage(file1);
-        let image2 = await canvas.loadImage(file2);
         let now = Date.now();
-        image1 = toCompressData(image1, 1080);
-        image2 = toCompressData(image2, 1080);
+        let result = await doSSIM(file1, file2)
+        // console.log(Date.now() - now, 'ms');
+        // console.log(file1);
+        // console.log(file2);
+        // console.log(result);
+        // console.log('');
 
-        // fs.writeFileSync(file1.replace(`images`, `binary`), image1.toBuffer(), 'binary');
-        // fs.writeFileSync(file2.replace(`images`, `binary`), image2.toBuffer(), 'binary');
+        console.log((Date.now() - now).toString().padStart(4, ' '), 'ms', result.ssim);
+        if (result.ssim > 0.95) {
+            console.log(file1);
+            console.log(file2);
+        }
 
-        image1.channels = 4;
-        image2.channels = 4;
-        let result = ssim.compare(image1, image2);
-        console.log(Date.now() - now, 'ms');
-        console.log(file1);
-        console.log(file2);
-        console.log(result);
-        console.log('');
-
-
-        let eigenvalue1 = await getImageEigenvalue(file1);
-        let eigenvalue2 = await getImageEigenvalue(file2);
+        // let eigenvalue1 = await getImageEigenvalue(file1);
+        // let eigenvalue2 = await getImageEigenvalue(file2);
 
         // console.log(eigenvalue1);
         // console.log(eigenvalue2);
 
     }
-})()
+})(process.argv.slice(2));
 
 
